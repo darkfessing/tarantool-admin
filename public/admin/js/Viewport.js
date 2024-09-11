@@ -39,18 +39,19 @@ Ext.define('Admin.Viewport', {
 
   dispatch(job, params, silent = false) {
     params = params || {};
-
+  
     if (!silent) {
       var el = (Ext.WindowManager.getActive() || this).el;
       var timeout = setTimeout(function() {
         el.mask('Please, wait');
       }, 250);
     }
-
+  
     return new Promise(function(resolve, reject) {
       Ext.Ajax.request({
         method: 'post',
         url: '/admin/api',
+        timeout: 300000, // Set timeout to 5 minutes (300,000 milliseconds)
         params: {
           rpc: Ext.JSON.encode({
             job: job,
@@ -59,35 +60,48 @@ Ext.define('Admin.Viewport', {
         },
         success: response => {
           clearTimeout(timeout);
-
+  
           try {
             var result = Ext.JSON.decode(response.responseText);
           }
           catch (e) {
+            console.error('Failed to parse response:', e);
             result = {
               success: false,
-              message: e,
+              message: 'Failed to parse response',
             };
           }
-
+  
           if (!silent && el.isMasked()) {
             setTimeout(function() {
               el.unmask();
             }, 250);
           }
-
+  
           if (result.success) {
             resolve(result.data || {});
           }
           else {
+            console.error('API error:', result.message);
             Ext.MessageBox.alert('Error', result.message);
             reject(result.message);
           }
         },
+        failure: (response) => {
+          clearTimeout(timeout);
+          console.error('API request failed:', response.statusText);
+          if (!silent && el.isMasked()) {
+            setTimeout(function() {
+              el.unmask();
+            }, 250);
+          }
+          Ext.MessageBox.alert('Error', 'Request failed: ' + response.statusText);
+          reject('Request failed: ' + response.statusText);
+        }
       });
     });
   },
-
+  
   dispatchProgress(job, data) {
     Ext.MessageBox.show({
       title:    'Processing',

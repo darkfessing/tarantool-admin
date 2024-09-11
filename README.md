@@ -1,3 +1,6 @@
+# FORK
+Extended timeouts (5m) and more understandable debug-errors.
+
 # Tarantool admin
 This application can be used to manage schema and data in tarantool database using web gui.  
 Feel free to contribute any way.
